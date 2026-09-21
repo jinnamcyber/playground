@@ -4,7 +4,7 @@ A standalone, Traditional Chinese physics workbench for learning circuit symbols
 
 ## Open
 
-Open `index.html` in a modern browser. No installation, external assets, build step, or network connection is required.
+Open `index.html` in a modern browser. No installation, build step, or network connection is required. Keep the bundled `assets` directory beside `index.html`.
 
 ## Use
 
@@ -23,4 +23,10 @@ The source is an ideal 6 V battery. Bulbs have fixed 3 Ω resistance and resisto
 
 Run `node test.cjs` for circuit regression checks and embedded JavaScript syntax validation. These cover series/parallel calculations, open circuits, short circuits, branch bypasses, stale brightness, and meter behavior.
 
-Browser visual and interaction verification is still needed; automated browser access to the local file was blocked by the environment's URL policy.
+The published GitHub Pages site has been checked in the browser: the page loads, the sample circuit draws 2 A, and opening its switch reduces current to 0 A. The classroom theme adds colorful learning cards, prediction questions, and an illustrated introduction.
+
+## Illustration
+
+`assets/circuit-explorer.png` was created with the built-in image generation tool. It is decorative artwork, not a wiring diagram. The generation prompt is saved in `assets/illustration-prompt.txt`.
+
+Live site: https://jinnamcyber.github.io/playground/

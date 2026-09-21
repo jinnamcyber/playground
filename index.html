@@ -319,31 +319,81 @@
   }
   @media(prefers-reduced-motion:reduce) { *,*::before,*::after {transition:none!important;animation:none!important;} }
 
+
+/* Vivid classroom theme: warm paper, colorful tools, high-contrast circuit boards. */
+:root {color-scheme:light;--ink:#273047;--muted:#606779;--cyan:#087969;--panel:#fff;--line:#e5e5e8;--line-strong:#b9b4d0;--green:#12704d;--red:#b52e45;--amber:#9a5800;--blue:#3162ba;--wire:#d6e4f2;--wire-on:#ffd166;}
+html,body {background:#f8f7f3;color:var(--ink);overflow-x:clip;}
+body::before {display:none;}
+.shell {max-width:1320px;padding:0 40px 30px;}
+.brandbar {height:88px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.brand {display:flex;align-items:center;gap:10px;text-decoration:none;color:#2e3345;font-weight:800;font-size:23px;letter-spacing:-.8px;}
+.brand-icon {display:grid;place-items:center;width:34px;height:38px;background:#7358cf;color:white;border-radius:12px;font-size:28px;}
+.brand-divider {font-weight:400;color:#c6c3cb;margin:0 7px;}.brand-sub {font-size:13px;letter-spacing:.05em;font-weight:600;}
+.grade-tag {font-size:12px;color:#646577;border:1px solid #dedce4;padding:8px 12px;border-radius:999px;white-space:nowrap;}
+header.hero {position:relative;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:0;border:1px solid #ece6d9;border-radius:28px;padding:30px 36px 28px;margin:0 0 34px;background:#fff9ed;overflow:hidden;}
+.eyebrow {font-size:12px;font-weight:700;letter-spacing:.13em;color:#65785a;display:flex;align-items:center;gap:8px;margin-bottom:16px;}.eyebrow span {width:7px;height:7px;background:#55a978;border-radius:50%;}
+header h1 {display:block;font-size:clamp(34px,4.2vw,56px);line-height:1.22;font-weight:800;letter-spacing:-.045em;margin:0;}
+header h1 em {font-style:normal;color:#7759c8;}header p {font-size:14px;line-height:1.9;margin:16px 0 20px;color:#6a6875;}
+.hero-cta {background:#7255c7;color:white;border-radius:12px;padding:13px 20px;font-size:14px;font-weight:650;min-height:48px;box-shadow:0 4px 0 #513ba0;display:inline-flex;gap:22px;align-items:center;transition:background .2s;}.hero-cta:hover {background:#6043b7;}.hero-cta span {font-size:22px;}
+.hero-meta {display:flex;gap:16px;margin-top:19px;font-size:11px;color:#77715f;}.hero-meta span+span:before {content:'•';margin-right:16px;color:#a5a092;}
+.hero-art {position:relative;min-width:0;align-self:stretch;display:flex;align-items:center;justify-content:center;}.hero-art img {width:100%;height:auto;max-height:350px;object-fit:contain;mix-blend-mode:multiply;border-radius:22px;}.art-label {position:absolute;bottom:5px;font-size:11px;letter-spacing:.04em;color:#776742;background:#ffffffc9;border:1px solid #eee1c7;border-radius:999px;padding:9px 15px;}.art-label span {color:#b27b16;margin-right:6px;}
+.journey-heading {display:flex;align-items:end;justify-content:space-between;margin-bottom:18px;}.section-kicker {font-size:10px;font-weight:700;letter-spacing:.14em;color:#858192;}.journey-heading h2 {font-size:21px;margin:5px 0 0;letter-spacing:-.02em;}.journey-tip {font-size:12px;color:#7a7486;}
+nav.tabs {background:transparent;border:0;border-radius:0;padding:0;gap:12px;margin-bottom:24px;flex-wrap:nowrap;}
+nav.tabs button {justify-content:flex-start;gap:12px;background:#fff;border:1px solid #e4e1e8;border-radius:14px;padding:16px;min-height:80px;color:#515467;text-align:left;font-weight:650;transition:border-color .2s,background .2s;}
+nav.tabs button small {display:block;font-size:11px;font-weight:400;letter-spacing:0;color:#797689;margin-top:5px;}
+nav.tabs button .num {flex-shrink:0;width:36px;height:36px;border-radius:11px;background:#eee8fc;color:#7955c2;font-size:12px;font-weight:750;}
+nav.tabs button:nth-child(2) .num {background:#e1f3ed;color:#267564;}nav.tabs button:nth-child(3) .num {background:#fff0d3;color:#94640a;}nav.tabs button:nth-child(4) .num {background:#e4ecff;color:#4766b4;}
+nav.tabs button:hover {background:#f3effc;color:#473572;}nav.tabs button.active {background:#f1ebfd;border-color:#9d80dd;box-shadow:0 3px 0 #d4c5f2;color:#6143a9;}
+nav.tabs button.active .num {background:#795ac8;color:white;}
+.panel {border:1px solid #e5e1eb;border-radius:20px;padding:28px;background:#fff;box-shadow:0 5px 20px #40304d04;}
+.panel h2 {font-size:21px;color:#333749;}.panel h2 .dot {background:#a28adc;width:9px;height:9px;}.panel .hint {font-size:13px;line-height:1.9;color:#777385;}
+.symbol-grid {gap:14px;}.symbol-card {position:relative;background:#fff;border:1px solid #e8e4ed;border-radius:16px;padding:16px 18px;transition:box-shadow .2s,border-color .2s;}.symbol-card:hover {background:#fff;border-color:#bba5e4;box-shadow:0 5px 16px #6e4eaa12;transform:none;}
+.symbol-card svg {background:#f4effd;color:#7554b3!important;height:84px;border-radius:10px;margin-bottom:5px;}.symbol-card:nth-child(4n+2) svg {background:#fff4d9;color:#9a6914!important;}.symbol-card:nth-child(4n+3) svg {background:#e5f4ed;color:#247968!important;}.symbol-card:nth-child(4n+4) svg {background:#eaf0ff;color:#4e69b3!important;}
+.symbol-card .name {font-size:15px;color:#393348;}.symbol-card .desc {font-size:12px;color:#716b7a;line-height:1.8;}
+.discovery {display:flex;align-items:center;gap:14px;background:#f7f4fc;border:1px solid #e9e2f4;border-radius:12px;padding:16px 18px;margin-top:20px;}.discovery-icon {display:grid;place-items:center;flex-shrink:0;background:#e8dcfa;color:#7656b2;width:34px;height:34px;border-radius:50%;font-weight:700;}.discovery strong {font-size:13px;color:#574370;}.discovery p {font-size:12px;line-height:1.8;color:#776b84;margin:5px 0 0;}
+.think-card {background:#fff8e5;border:1px solid #f0e1b7;border-radius:12px;padding:13px 16px;margin:0 0 20px;color:#7a5d1f;font-size:13px;line-height:1.8;}.think-card summary {cursor:pointer;font-weight:600;}.think-card p {margin:10px 0 0;}
+.preset-list button {background:#f9f8fc;border-color:#e6e2eb;color:#414055;min-height:72px;}.preset-list button:hover {background:#f2eefb;border-color:#c7b5e2;}.preset-list button.active {background:#f0eafa;border-color:#ac8ddb;}.preset-list button .pdesc {color:#777081;line-height:1.7;}
+.preset-stage,.build-stage,.ohm-stage {--ink:#edf4ff;--muted:#b5c4d8;--line:#ffffff20;--cyan:#85e5cd;--red:#ff8997;--green:#8fe0b0;--amber:#ffd166;color:var(--ink);background-color:#172536;background-image:radial-gradient(#a7c8ee24 1px,transparent 1px);border-color:#243749;border-radius:16px;}
+.slot.filled rect.slot-bg {fill:#172536;}.stat {background:#ffffff07;}.stat .v {font-size:21px;}.stat .k {font-size:12px;}.lesson-note {background:#85e5cd0a;color:#b8d7d3;border-color:#85e5cd;}
+.palette {background:#faf8fe;border-color:#e8e1f0;}.palette h3,.readout h3 {color:#766783;}.pal-item {background:#fff;border-color:#e4dce9;color:#5e4e76;}.pal-item .lbl {color:#625470;}.pal-item:hover {background:#f1eafb;border-color:#bc9ee2;transform:none;}.pal-item.selected {background:#ede4fa;border-color:#9c75d2;box-shadow:0 0 0 1px #9c75d2;}
+.readout {background:#faf8fd;border-color:#e9e3ee;}.readout .row {background:white;border-color:#eee6f3;}.readout .row .v {color:#6747a1;font-size:19px;}.readout .status {background:#eaf6ef;color:#286549;border-color:#c1dfce;}.readout .status.warn {background:#fff0ee;color:#a83d3e;border-color:#efcfca;}.readout .status.idle {background:#f0eafa;color:#756582;border-color:#e0d6ec;}
+.tbtn {background:#ffffff0d;color:#e3edf9;}.tbtn:hover {background:#ffffff18;}#example {background:#d8c5ff;color:#39234e;border-color:#d8c5ff;font-weight:650;}
+.slider-block {background:#f9f7fd;border-color:#e9e1f0;}.slider-block .lbl .name {color:#756980;}.slider-block .lbl .val {color:#7350b0;}.formula {background:#f0eafa;border-color:#dfd1f1;}.formula .big {color:#7350b0;}.formula .calc {color:#5b4d68;}.formula .calc span {color:#8b5910;}
+:focus-visible {outline-color:#9870db;}footer {margin-top:26px;color:#8a8293;letter-spacing:.03em;font-size:11px;}
+@media(max-width:1000px){nav.tabs button {padding:12px;gap:8px;}nav.tabs button small {font-size:10px;}header.hero {padding:26px;}header h1 {font-size:40px;}.hero-meta {gap:8px;font-size:10px;}}
+@media(max-width:700px){.shell {padding:0 16px 24px;}.brandbar {height:70px;}.brand {font-size:21px;}.brand-sub,.brand-divider {display:none;}.grade-tag {font-size:10px;padding:7px 9px;}header.hero {grid-template-columns:1fr;padding:24px;margin-bottom:25px;border-radius:20px;}.hero-copy {z-index:1;}header h1 {font-size:40px;}header p {font-size:13px;}.hero-art {height:190px;margin-top:12px;}.hero-art img {height:210px;width:100%;}.art-label {bottom:0;font-size:10px;}.hero-meta {font-size:10px;gap:12px;}.journey-tip {display:none;}.journey-heading h2 {font-size:20px;}nav.tabs {display:grid;grid-template-columns:1fr 1fr;gap:10px;}nav.tabs button {min-height:73px;padding:12px;gap:10px;}nav.tabs button small {font-size:10px;}nav.tabs button .num {width:32px;height:32px;}.panel {padding:20px 14px;}.panel h2 {font-size:19px;}.symbol-card {padding:12px;}.symbol-card svg {height:70px;}.symbol-card .desc {font-size:11px;}.discovery {align-items:flex-start;padding:14px;}.discovery strong {font-size:12px;}}
+
 </style>
 </head>
 <body>
 <div class="shell">
 
-  <header>
-    <div>
-      <div class="eyebrow">PLAYGROUND / PHYSICS 01</div><h1>電路圖互動實驗室 <span class="badge">CIRCUIT LAB</span></h1>
-      <p>從一個符號開始，讓電路亮起來。觀察、搭建，再用歐姆定律探索電壓、電阻與電流的關係。</p>
-    </div><div class="header-mark" aria-hidden="true">Ω</div>
+  <div class="brandbar"><a class="brand" href="./" aria-label="Playground 電路實驗室首頁"><span class="brand-icon" aria-hidden="true">ϟ</span>playground<span class="brand-divider">/</span><span class="brand-sub">科學探索室</span></a><span class="grade-tag">初中物理 · 互動學習</span></div>
+  <header class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow"><span></span> 小小實驗，大大發現</div>
+      <h1>讓好奇心，<br><em>接通電路。</em></h1>
+      <p>電流看不見，但你可以讓它亮起來。<br>認識元件、動手搭建，一起探索電路裡的祕密。</p>
+      <button class="hero-cta" id="start-experiment">開始我的第一個實驗 <span aria-hidden="true">↗</span></button>
+      <div class="hero-meta"><span>4 個探索單元</span><span>自由試驗，即時發現</span></div>
+    </div>
+    <div class="hero-art"><img src="assets/circuit-explorer.png" width="1536" height="1024" alt="發光的黃色燈泡角色，旁邊放著電池、彩色導線和開關的趣味插畫" fetchpriority="high"><span class="art-label"><span aria-hidden="true">✦</span> 把「為甚麼」變成「原來如此」</span></div>
   </header>
+  <div class="journey-heading"><div><span class="section-kicker">YOUR LEARNING JOURNEY</span><h2>今天，你想探索甚麼？</h2></div><span class="journey-tip">選一個單元，開始探索 ↓</span></div>
 
   <nav class="tabs" id="tabs">
-    <button class="active" data-tab="symbols"><span class="num">1</span>電路符號</button>
-    <button data-tab="presets"><span class="num">2</span>預設電路</button>
-    <button data-tab="builder"><span class="num">3</span>電路搭建</button>
-    <button data-tab="ohm"><span class="num">4</span>歐姆定律</button>
+    <button class="active" data-tab="symbols"><span class="num">01</span><span>認識元件<small>電路的基本語言</small></span></button>
+    <button data-tab="presets"><span class="num">02</span><span>觀察電路<small>串聯、並聯與開關</small></span></button>
+    <button data-tab="builder"><span class="num">03</span><span>動手搭建<small>你的迷你實驗台</small></span></button>
+    <button data-tab="ohm"><span class="num">04</span><span>探索規律<small>看見 V、I、R 的關係</small></span></button>
   </nav>
 
   <!-- ============ Tab 1 ============ -->
   <section class="tab-panel active" id="tab-symbols">
     <div class="panel">
-      <h2><span class="dot"></span>電路元件符號</h2>
+      <h2><span class="dot"></span>先認識你的實驗夥伴</h2>
       <p class="hint">這些是初中物理課本中常用的電路圖符號。每張卡片都列出元件的名稱與作用。</p>
-      <div class="symbol-grid" id="symbol-grid"></div>
+      <div class="symbol-grid" id="symbol-grid"></div><div class="discovery"><span class="discovery-icon" aria-hidden="true">?</span><div><strong>小發現：電流計與電壓計，接法一樣嗎？</strong><p>電流計要串聯，讓電流流經它；電壓計要並聯，比較元件兩端的電壓。</p></div></div>
     </div>
   </section>
 
@@ -352,7 +402,7 @@
     <div class="panel">
       <h2><span class="dot"></span>典型電路觀察</h2>
       <p class="hint">點選左側不同的電路類型，並按下開關觀察電流變化與燈泡亮度。電池電壓固定為 6V。</p>
-      <div class="preset-layout">
+      <details class="think-card"><summary>先猜猜：並聯電路中，關掉一條支路，另一個燈泡會熄滅嗎？</summary><p>不會。兩條支路各自形成通路；使用理想電源時，另一個燈泡的電壓與亮度保持不變。切換到「並聯電路」試試看！</p></details><div class="preset-layout">
         <div class="preset-list" id="preset-list"></div>
         <div class="preset-stage">
           <div class="stage-canvas" id="preset-canvas"></div>
@@ -401,7 +451,7 @@
     <div class="panel">
       <h2><span class="dot"></span>歐姆定律模擬器</h2>
       <p class="hint">調整電壓 V 與電阻 R，觀察電流 I 的變化。電壓計（V）與電流計（A）會同步顯示讀數，燈泡亮度則隨功率改變。</p>
-      <div class="ohm-layout">
+      <details class="think-card"><summary>先猜猜：電阻不變，把電壓加倍，電流會怎樣？</summary><p>電流也會加倍！因為 I = V ÷ R。試試把電壓從 3 V 調到 6 V，比較電流讀數。</p></details><div class="ohm-layout">
         <div class="ohm-stage" id="ohm-canvas"></div>
         <div class="ohm-controls">
           <div class="slider-block">
@@ -557,6 +607,11 @@ function makeSymbolSVG(key, opt={}, width=80, height=44){
    TAB SWITCHING
    ================================================================= */
 const tabs = [...document.querySelectorAll("nav.tabs button")];
+document.getElementById('start-experiment').addEventListener('click',()=>{
+  document.getElementById('nav-builder').click();document.getElementById('example').click();
+  document.getElementById('tabs').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});
+  document.getElementById('example').focus({preventScroll:true});
+});
 document.getElementById("tabs").setAttribute("role","tablist");
 document.getElementById("tabs").setAttribute("aria-label","實驗模組");
 tabs.forEach((btn,index) => {
@@ -716,7 +771,7 @@ function placeSymbol(svg, key, x, y, opt={}, rotate=0){
   g.style.color = opt.color || "var(--ink)";
   SYMBOLS[key].draw(g, opt);
   const backing = document.createElementNS(SVG_NS,'rect');
-  backing.setAttribute('x',-26);backing.setAttribute('y',-17);backing.setAttribute('width',52);backing.setAttribute('height',34);backing.setAttribute('fill','#111b24');
+  backing.setAttribute('x',-26);backing.setAttribute('y',-17);backing.setAttribute('width',52);backing.setAttribute('height',34);backing.setAttribute('fill','#172536');
   g.insertBefore(backing,g.firstChild);
   if (opt.label) {
     const t = document.createElementNS(SVG_NS, "text");
