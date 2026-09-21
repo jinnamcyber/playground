@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>初中物理 · 電路圖互動實驗室</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --ink:#f4f7fb;
+    --muted:#94a8b3;
+    --bg-0:#06090b;
+    --bg-1:#0c1418;
+    --panel:rgba(12,20,24,0.72);
+    --panel-strong:rgba(8,14,18,0.92);
+    --line:rgba(255,255,255,0.10);
+    --line-strong:rgba(255,255,255,0.22);
+    --cyan:#2ee9dd;
+    --amber:#ffbf57;
+    --pink:#ff5fd2;
+    --red:#ff6266;
+    --blue:#65b7ff;
+    --green:#60f2a8;
+    --wire:#cfe6ee;
+    --wire-on:#ffd166;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;min-height:100vh;
+    background:
+      radial-gradient(circle at 22% 32%, rgba(46,233,221,0.14), transparent 36rem),
+      radial-gradient(circle at 78% 68%, rgba(255,191,87,0.10), transparent 32rem),
+      linear-gradient(135deg, #071114 0%, #0c1419 50%, #07090c 100%);
+    color:var(--ink);
+    font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",Inter,ui-sans-serif,system-ui,sans-serif;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size:48px 48px;
+    mask-image:radial-gradient(circle at 50% 40%, black, transparent 78%);
+  }
+  button,input{font:inherit;color:inherit;}
+  button{cursor:pointer;background:none;border:none;}
+
+  .shell{max-width:1280px;margin:0 auto;padding:32px 28px 80px;}
+  header{
+    display:flex;align-items:flex-end;justify-content:space-between;gap:24px;
+    padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:24px;
+    flex-wrap:wrap;
+  }
+  header h1{
+    margin:0;font-size:28px;letter-spacing:0.04em;font-weight:600;
+    display:flex;align-items:center;gap:14px;
+  }
+  header h1 .badge{
+    font-size:11px;letter-spacing:0.18em;padding:4px 10px;border-radius:999px;
+    background:rgba(46,233,221,0.10);color:var(--cyan);
+    border:1px solid rgba(46,233,221,0.32);
+  }
+  header p{margin:0;color:var(--muted);font-size:13.5px;max-width:560px;line-height:1.55;}
+
+  nav.tabs{
+    display:flex;gap:6px;background:var(--panel);
+    border:1px solid var(--line);border-radius:14px;padding:6px;
+    margin-bottom:22px;flex-wrap:wrap;
+  }
+  nav.tabs button{
+    padding:10px 18px;border-radius:10px;color:var(--muted);
+    font-size:14px;letter-spacing:0.04em;transition:all .2s ease;
+    display:flex;align-items:center;gap:8px;
+  }
+  nav.tabs button:hover{color:var(--ink);background:rgba(255,255,255,0.04);}
+  nav.tabs button.active{
+    background:linear-gradient(135deg, rgba(46,233,221,0.18), rgba(101,183,255,0.12));
+    color:var(--ink);box-shadow:inset 0 0 0 1px rgba(46,233,221,0.35);
+  }
+  nav.tabs button .num{
+    width:22px;height:22px;border-radius:6px;display:inline-flex;
+    align-items:center;justify-content:center;font-size:11px;
+    background:rgba(255,255,255,0.06);color:var(--muted);
+  }
+  nav.tabs button.active .num{background:rgba(46,233,221,0.22);color:var(--cyan);}
+
+  .panel{
+    background:var(--panel);border:1px solid var(--line);
+    border-radius:18px;padding:24px;backdrop-filter:blur(10px);
+  }
+  .panel h2{
+    margin:0 0 6px;font-size:18px;font-weight:600;letter-spacing:0.03em;
+    display:flex;align-items:center;gap:10px;
+  }
+  .panel h2 .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+  .panel .hint{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 18px;}
+
+  /* ============ Tab 1: Symbols ============ */
+  .symbol-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+    gap:14px;
+  }
+  .symbol-card{
+    background:rgba(255,255,255,0.025);border:1px solid var(--line);
+    border-radius:14px;padding:16px;text-align:center;transition:all .25s;
+  }
+  .symbol-card:hover{border-color:var(--line-strong);transform:translateY(-2px);background:rgba(255,255,255,0.04);}
+  .symbol-card svg{width:100%;height:64px;}
+  .symbol-card .name{font-size:14px;font-weight:600;margin-top:8px;letter-spacing:0.05em;}
+  .symbol-card .desc{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5;}
+
+  /* ============ Tab 2: Presets ============ */
+  .preset-layout{display:grid;grid-template-columns:280px 1fr;gap:20px;}
+  @media (max-width: 900px){.preset-layout{grid-template-columns:1fr;}}
+  .preset-list{display:flex;flex-direction:column;gap:8px;}
+  .preset-list button{
+    text-align:left;padding:14px 16px;border-radius:12px;
+    background:rgba(255,255,255,0.025);border:1px solid var(--line);
+    color:var(--ink);font-size:14px;transition:all .2s;
+  }
+  .preset-list button:hover{background:rgba(255,255,255,0.05);border-color:var(--line-strong);}
+  .preset-list button.active{
+    background:linear-gradient(135deg, rgba(46,233,221,0.15), rgba(101,183,255,0.08));
+    border-color:rgba(46,233,221,0.40);
+  }
+  .preset-list button .pname{font-weight:600;letter-spacing:0.04em;}
+  .preset-list button .pdesc{font-size:11.5px;color:var(--muted);margin-top:3px;}
+
+  .preset-stage{
+    background:rgba(0,0,0,0.25);border:1px solid var(--line);
+    border-radius:14px;padding:18px;min-height:380px;
+    display:flex;flex-direction:column;gap:12px;
+  }
+  .stage-canvas{flex:1;min-height:280px;display:flex;align-items:center;justify-content:center;}
+  .stage-canvas svg{max-width:100%;height:auto;}
+  .stage-info{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;
+  }
+  .stat{
+    background:rgba(255,255,255,0.03);border:1px solid var(--line);
+    border-radius:10px;padding:10px 12px;
+  }
+  .stat .k{font-size:11px;color:var(--muted);letter-spacing:0.08em;}
+  .stat .v{font-size:18px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums;}
+  .stat .v.warn{color:var(--red);}
+  .stat .v.ok{color:var(--green);}
+
+  /* ============ Tab 3: Builder ============ */
+  .builder-layout{display:grid;grid-template-columns:220px 1fr 240px;gap:18px;}
+  @media (max-width: 1100px){.builder-layout{grid-template-columns:1fr;}}
+
+  .palette{
+    background:rgba(0,0,0,0.25);border:1px solid var(--line);
+    border-radius:14px;padding:14px;
+  }
+  .palette h3{margin:0 0 10px;font-size:13px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;}
+  .palette-items{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .pal-item{
+    background:rgba(255,255,255,0.03);border:1px solid var(--line);
+    border-radius:10px;padding:10px 8px;text-align:center;cursor:grab;
+    transition:all .2s;user-select:none;
+  }
+  .pal-item:hover{background:rgba(255,255,255,0.08);border-color:var(--cyan);transform:translateY(-1px);}
+  .pal-item.dragging{opacity:0.4;}
+  .pal-item svg{width:48px;height:32px;display:block;margin:0 auto;}
+  .pal-item .lbl{font-size:11.5px;margin-top:4px;color:var(--ink);}
+
+  .build-stage{
+    background:rgba(0,0,0,0.25);border:1px solid var(--line);
+    border-radius:14px;padding:18px;min-height:420px;
+    display:flex;flex-direction:column;
+  }
+  .build-canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;}
+  .build-canvas{width:100%;}
+
+  .build-toolbar{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line);
+    flex-wrap:wrap;
+  }
+  .build-toolbar .note{font-size:12px;color:var(--muted);}
+  .tbtn{
+    padding:7px 12px;border-radius:8px;background:rgba(255,255,255,0.05);
+    border:1px solid var(--line);color:var(--ink);font-size:12px;
+    transition:all .2s;display:inline-flex;align-items:center;gap:6px;
+  }
+  .tbtn:hover{background:rgba(255,255,255,0.10);border-color:var(--line-strong);}
+  .tbtn.danger:hover{border-color:var(--red);color:var(--red);}
+
+  .readout{
+    background:rgba(0,0,0,0.25);border:1px solid var(--line);
+    border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;
+  }
+  .readout h3{margin:0 0 4px;font-size:13px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;}
+  .readout .row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;
+    border:1px solid var(--line);font-size:13px;
+  }
+  .readout .row .k{color:var(--muted);}
+  .readout .row .v{font-variant-numeric:tabular-nums;font-weight:600;}
+  .readout .status{
+    padding:10px 12px;border-radius:10px;font-size:12.5px;line-height:1.6;
+    background:rgba(96,242,168,0.08);border:1px solid rgba(96,242,168,0.30);color:var(--green);
+  }
+  .readout .status.warn{background:rgba(255,98,102,0.10);border-color:rgba(255,98,102,0.35);color:var(--red);}
+  .readout .status.idle{background:rgba(255,255,255,0.03);border-color:var(--line);color:var(--muted);}
+
+  /* ============ Tab 4: Ohm's Law ============ */
+  .ohm-layout{display:grid;grid-template-columns:1fr 360px;gap:24px;}
+  @media (max-width: 900px){.ohm-layout{grid-template-columns:1fr;}}
+  .ohm-stage{
+    background:rgba(0,0,0,0.25);border:1px solid var(--line);
+    border-radius:14px;padding:20px;min-height:380px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .ohm-controls{display:flex;flex-direction:column;gap:18px;}
+  .slider-block{
+    background:rgba(0,0,0,0.25);border:1px solid var(--line);
+    border-radius:12px;padding:16px;
+  }
+  .slider-block .lbl{
+    display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;
+  }
+  .slider-block .lbl .name{font-size:13px;color:var(--muted);letter-spacing:0.05em;}
+  .slider-block .lbl .val{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .slider-block input[type=range]{
+    width:100%;-webkit-appearance:none;background:transparent;
+  }
+  .slider-block input[type=range]::-webkit-slider-runnable-track{
+    height:4px;background:linear-gradient(90deg, var(--cyan), var(--blue));
+    border-radius:2px;
+  }
+  .slider-block input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:#fff;margin-top:-7px;cursor:pointer;
+    box-shadow:0 0 0 3px rgba(46,233,221,0.30);
+  }
+  .formula{
+    background:linear-gradient(135deg, rgba(46,233,221,0.10), rgba(255,191,87,0.06));
+    border:1px solid rgba(46,233,221,0.25);
+    border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.7;
+  }
+  .formula .big{font-size:24px;font-weight:600;letter-spacing:0.05em;color:var(--cyan);}
+  .formula .calc{margin-top:8px;font-variant-numeric:tabular-nums;color:var(--ink);}
+  .formula .calc span{color:var(--amber);}
+
+  /* ============ Slot styling for builder ============ */
+  .slot{cursor:pointer;}
+  .slot rect.slot-bg{
+    fill:rgba(255,255,255,0.02);stroke:var(--line);stroke-width:1;
+    stroke-dasharray:4 3;transition:all .2s;
+  }
+  .slot:hover rect.slot-bg{fill:rgba(46,233,221,0.06);stroke:var(--cyan);}
+  .slot.drag-over rect.slot-bg{fill:rgba(46,233,221,0.18);stroke:var(--cyan);}
+  .slot.filled rect.slot-bg{stroke:transparent;fill:transparent;stroke-dasharray:none;}
+
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  footer{
+    margin-top:28px;text-align:center;color:var(--muted);font-size:12px;letter-spacing:0.08em;
+  }
+
+  /* A calm workbench, with readable controls on every screen. */
+  :root { --bg-0:#10171e; --muted:#a7b8c5; --cyan:#72dfc4; --panel:#17222c; --line:rgba(186,210,228,.14); }
+  html,body { background:#10171e; }
+  body::before { background-size:32px 32px; opacity:.35; }
+  .shell { max-width:1440px; padding:36px 40px; }
+  header { align-items:center; padding:0 0 30px; margin-bottom:24px; }
+  header h1 { font-size:clamp(24px,3vw,36px); letter-spacing:-.03em; flex-wrap:wrap; gap:12px; }
+  header p { max-width:720px; margin-top:14px; line-height:1.8; }
+  .eyebrow { color:var(--cyan); font-size:12px; letter-spacing:.18em; margin-bottom:12px; }
+  .header-mark { width:68px; height:68px; border:1px solid var(--line); border-radius:20px; display:grid; place-items:center; color:var(--cyan); font-size:32px; background:#1d3034; }
+  nav.tabs { padding:5px; gap:6px; background:#0c1218; border-radius:14px; }
+  nav.tabs button { flex:1; justify-content:center; min-height:50px; }
+  nav.tabs button.active { background:#263c40; box-shadow:inset 0 0 0 1px #4c8f83; }
+  .panel { padding:28px; box-shadow:0 16px 48px #0002; backdrop-filter:none; }
+  .panel h2 { font-size:21px; margin-bottom:10px; }
+  .panel h2 .dot { box-shadow:none; }
+  .symbol-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+  .symbol-card { padding:24px 18px; background:#1c2934; text-align:left; }
+  .symbol-card svg { height:76px; padding:8px; background:#121c25; border-radius:10px; margin-bottom:12px; }
+  .symbol-card .name { font-size:16px; }
+  .symbol-card .desc { font-size:13px; line-height:1.8; margin-top:8px; }
+  .symbol-card:hover { transform:none; }
+  .preset-stage,.build-stage,.ohm-stage { background-color:#111b24; background-image:radial-gradient(#a7b8c522 1px,transparent 1px); background-size:20px 20px; }
+  .builder-layout { grid-template-columns:170px minmax(0,1fr); }
+  .readout { grid-column:1/-1; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .readout h3,.readout .status { grid-column:1/-1; }
+  .readout .row { flex-wrap:wrap; gap:8px; }
+  .pal-item { min-height:76px; cursor:pointer; }
+  .pal-item.selected { border-color:var(--cyan); background:#23443f; }
+  .tbtn { min-height:44px; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  :focus-visible { outline:3px solid var(--cyan); outline-offset:4px; }
+  .slot:focus-visible rect.slot-bg { stroke:var(--cyan); stroke-width:3; }
+  .slot.filled rect.slot-bg { fill:#111b24; }
+  .slot-label { fill:var(--muted); font-size:13px; text-anchor:middle; }
+  .ohm-stage svg { width:100%; height:auto; }
+  input[type=range] { min-height:32px; accent-color:var(--cyan); }
+  input[type=range]::-moz-range-track { height:4px; background:var(--cyan); }
+  input[type=range]::-moz-range-thumb { width:18px; height:18px; border:0; border-radius:50%; background:white; }
+  .build-toolbar > div:last-child { flex-wrap:wrap; }
+  .build-canvas { min-width:480px; }
+  .build-canvas-wrap { min-width:0; }
+  .lesson-note { margin-top:20px; padding:16px 18px; border-left:3px solid var(--cyan); background:#72dfc409; color:var(--muted); font-size:13px; line-height:1.8; }
+  footer { font-size:12px; line-height:1.8; }
+  @media(max-width:1100px) { .builder-layout {grid-template-columns:150px minmax(0,1fr);} }
+  @media(max-width:700px) {
+    .shell {padding:20px 14px;} .panel {padding:18px 14px;} .header-mark {display:none;}
+    header h1 .badge {display:none;} nav.tabs {display:grid;grid-template-columns:1fr 1fr;} nav.tabs button {padding:8px;}
+    .symbol-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;} .symbol-card {padding:14px 12px;}
+    .builder-layout {grid-template-columns:minmax(0,1fr);} .palette-items {grid-template-columns:repeat(3,1fr);}
+    .readout {grid-template-columns:1fr 1fr;} .build-stage {padding:12px;min-height:300px;}
+    .preset-stage {padding:10px;min-height:300px;} .stage-canvas {min-height:220px;}
+    .ohm-stage {padding:8px;min-height:260px;} .preset-list {display:grid;grid-template-columns:1fr 1fr;}
+  }
+  @media(prefers-reduced-motion:reduce) { *,*::before,*::after {transition:none!important;animation:none!important;} }
+
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <div>
+      <div class="eyebrow">PLAYGROUND / PHYSICS 01</div><h1>電路圖互動實驗室 <span class="badge">CIRCUIT LAB</span></h1>
+      <p>從一個符號開始，讓電路亮起來。觀察、搭建，再用歐姆定律探索電壓、電阻與電流的關係。</p>
+    </div><div class="header-mark" aria-hidden="true">Ω</div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="active" data-tab="symbols"><span class="num">1</span>電路符號</button>
+    <button data-tab="presets"><span class="num">2</span>預設電路</button>
+    <button data-tab="builder"><span class="num">3</span>電路搭建</button>
+    <button data-tab="ohm"><span class="num">4</span>歐姆定律</button>
+  </nav>
+
+  <!-- ============ Tab 1 ============ -->
+  <section class="tab-panel active" id="tab-symbols">
+    <div class="panel">
+      <h2><span class="dot"></span>電路元件符號</h2>
+      <p class="hint">這些是初中物理課本中常用的電路圖符號。每張卡片都列出元件的名稱與作用。</p>
+      <div class="symbol-grid" id="symbol-grid"></div>
+    </div>
+  </section>
+
+  <!-- ============ Tab 2 ============ -->
+  <section class="tab-panel" id="tab-presets">
+    <div class="panel">
+      <h2><span class="dot"></span>典型電路觀察</h2>
+      <p class="hint">點選左側不同的電路類型，並按下開關觀察電流變化與燈泡亮度。電池電壓固定為 6V。</p>
+      <div class="preset-layout">
+        <div class="preset-list" id="preset-list"></div>
+        <div class="preset-stage">
+          <div class="stage-canvas" id="preset-canvas"></div>
+          <div class="stage-info" id="preset-info" aria-live="polite"></div><div class="lesson-note">點選電路中的開關，觀察讀數變化。金色導線表示有電流；燈泡亮度按功率示意。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Tab 3 ============ -->
+  <section class="tab-panel" id="tab-builder">
+    <div class="panel">
+      <h2><span class="dot"></span>自由搭建電路</h2>
+      <p class="hint">先選擇元件，再點選格子放入，也可以拖曳。並聯支路分別跨接第 2、3 個元件。選「操作開關」切換開關；選「移除元件」清除格子。</p>
+      <div class="builder-layout">
+        <div class="palette">
+          <h3>元件箱</h3>
+          <div class="palette-items" id="palette"></div>
+        </div>
+        <div class="build-stage">
+          <div class="build-toolbar">
+            <div class="note">選擇元件 → 點選格子 · 電池 6 V</div>
+            <div style="display:flex;gap:8px;">
+              <button class="tbtn" id="example">載入範例</button><button class="tbtn" id="add-branch">+ 並聯支路</button>
+              <button class="tbtn danger" id="clear-all">清空</button>
+            </div>
+          </div>
+          <div class="build-canvas-wrap">
+            <svg id="build-canvas" class="build-canvas" viewBox="0 0 800 420" preserveAspectRatio="xMidYMid meet"></svg>
+          </div>
+        </div>
+        <div class="readout">
+          <h3>即時讀數</h3>
+          <div class="row"><span class="k">電源電壓 V</span><span class="v" id="r-volt">6.0 V</span></div>
+          <div class="row"><span class="k">總電阻 R</span><span class="v" id="r-res">— Ω</span></div>
+          <div class="row"><span class="k">總電流 I</span><span class="v" id="r-cur">— A</span></div>
+          <div class="row"><span class="k">總功率 P</span><span class="v" id="r-pow">— W</span></div>
+          <div class="status idle" id="r-status" role="status">尚未形成完整迴路。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Tab 4 ============ -->
+  <section class="tab-panel" id="tab-ohm">
+    <div class="panel">
+      <h2><span class="dot"></span>歐姆定律模擬器</h2>
+      <p class="hint">調整電壓 V 與電阻 R，觀察電流 I 的變化。電壓計（V）與電流計（A）會同步顯示讀數，燈泡亮度則隨功率改變。</p>
+      <div class="ohm-layout">
+        <div class="ohm-stage" id="ohm-canvas"></div>
+        <div class="ohm-controls">
+          <div class="slider-block">
+            <div class="lbl"><span class="name">電壓 V</span><span class="val"><span id="ohm-v-val">6.0</span> V</span></div>
+            <input aria-label="電壓 V" type="range" id="ohm-v" min="0" max="12" step="0.1" value="6"/>
+          </div>
+          <div class="slider-block">
+            <div class="lbl"><span class="name">電阻 R</span><span class="val"><span id="ohm-r-val">3.0</span> Ω</span></div>
+            <input aria-label="電阻 R" type="range" id="ohm-r" min="0.5" max="20" step="0.1" value="3"/>
+          </div>
+          <div class="formula">
+            <div class="big">I = V / R</div>
+            <div class="calc">I = <span id="ohm-v-eq">6.0</span> ÷ <span id="ohm-r-eq">3.0</span> = <span id="ohm-i-eq">2.00</span> A</div>
+            <div class="calc">P = V·I = <span id="ohm-p-eq">12.00</span> W</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>PLAYGROUND · 初中物理 · 理想電路模型（燈泡電阻固定；亮度依功率示意）</footer>
+</div>
+
+<script>
+/* =================================================================
+   SVG SYMBOL DEFINITIONS — used everywhere
+   ================================================================= */
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+const SYMBOLS = {
+  battery: {
+    name: "電池",
+    desc: "提供電壓，長線為正極（+），短線為負極（−）。",
+    draw: (g, opt={}) => {
+      const s = opt.scale || 1;
+      g.innerHTML = `
+        <line x1="-26" y1="0" x2="-8" y2="0" stroke="currentColor" stroke-width="2"/>
+        <line x1="-8" y1="-14" x2="-8" y2="14" stroke="currentColor" stroke-width="3"/>
+        <line x1="4" y1="-8" x2="4" y2="8" stroke="currentColor" stroke-width="2"/>
+        <line x1="4" y1="0" x2="26" y2="0" stroke="currentColor" stroke-width="2"/>
+        <text x="-12" y="-20" font-size="11" fill="#ffbf57" text-anchor="middle">+</text>
+        <text x="8" y="-20" font-size="11" fill="#65b7ff" text-anchor="middle">−</text>
+      `;
+    },
+  },
+  bulb: {
+    name: "燈泡",
+    desc: "將電能轉化為光與熱；同一燈泡的功率越大，通常越亮。",
+    draw: (g, opt={}) => {
+      const lit = opt.lit ?? 0;       // 0..1 brightness
+      const glow = lit > 0.05 ? `<circle cx="0" cy="0" r="18" fill="#ffbf57" opacity="${0.18*lit}" />` : "";
+      const fill = lit > 0.05 ? `rgba(255,191,87,${0.20 + 0.55*lit})` : "transparent";
+      g.innerHTML = `
+        ${glow}
+        <circle cx="0" cy="0" r="12" fill="${fill}" stroke="currentColor" stroke-width="2"/>
+        <line x1="-8.5" y1="-8.5" x2="8.5" y2="8.5" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="8.5" y1="-8.5" x2="-8.5" y2="8.5" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="-26" y1="0" x2="-12" y2="0" stroke="currentColor" stroke-width="2"/>
+        <line x1="12" y1="0" x2="26" y2="0" stroke="currentColor" stroke-width="2"/>
+      `;
+    },
+  },
+  switch: {
+    name: "開關",
+    desc: "閉合時電流通過，斷開時電路中斷。",
+    draw: (g, opt={}) => {
+      const closed = opt.closed ?? true;
+      const lever = closed
+        ? `<line x1="-10" y1="0" x2="10" y2="0" stroke="currentColor" stroke-width="2.5"/>`
+        : `<line x1="-10" y1="0" x2="8" y2="-12" stroke="currentColor" stroke-width="2.5"/>`;
+      g.innerHTML = `
+        <line x1="-26" y1="0" x2="-12" y2="0" stroke="currentColor" stroke-width="2"/>
+        <line x1="12" y1="0" x2="26" y2="0" stroke="currentColor" stroke-width="2"/>
+        <circle cx="-11" cy="0" r="2.2" fill="currentColor"/>
+        <circle cx="11" cy="0" r="2.2" fill="currentColor"/>
+        ${lever}
+      `;
+    },
+  },
+  resistor: {
+    name: "電阻器",
+    desc: "限制電流，阻值以歐姆（Ω）為單位。",
+    draw: (g) => {
+      g.innerHTML = `
+        <line x1="-26" y1="0" x2="-14" y2="0" stroke="currentColor" stroke-width="2"/>
+        <rect x="-14" y="-7" width="28" height="14" fill="none" stroke="currentColor" stroke-width="2" rx="1"/>
+        <line x1="14" y1="0" x2="26" y2="0" stroke="currentColor" stroke-width="2"/>
+      `;
+    },
+  },
+  wire: {
+    name: "導線",
+    desc: "連接元件，理想導線電阻為零。",
+    draw: (g) => {
+      g.innerHTML = `<line x1="-26" y1="0" x2="26" y2="0" stroke="currentColor" stroke-width="2"/>`;
+    },
+  },
+  ammeter: {
+    name: "電流計",
+    desc: "測量電流，串聯接入電路，單位為安培（A）。",
+    draw: (g) => {
+      g.innerHTML = `
+        <line x1="-26" y1="0" x2="-14" y2="0" stroke="currentColor" stroke-width="2"/>
+        <circle cx="0" cy="0" r="14" fill="none" stroke="currentColor" stroke-width="2"/>
+        <text x="0" y="5" font-size="13" font-weight="600" fill="currentColor" text-anchor="middle">A</text>
+        <line x1="14" y1="0" x2="26" y2="0" stroke="currentColor" stroke-width="2"/>
+      `;
+    },
+  },
+  voltmeter: {
+    name: "電壓計",
+    desc: "測量電壓，並聯接入元件，單位為伏特（V）。",
+    draw: (g) => {
+      g.innerHTML = `
+        <line x1="-26" y1="0" x2="-14" y2="0" stroke="currentColor" stroke-width="2"/>
+        <circle cx="0" cy="0" r="14" fill="none" stroke="currentColor" stroke-width="2"/>
+        <text x="0" y="5" font-size="13" font-weight="600" fill="currentColor" text-anchor="middle">V</text>
+        <line x1="14" y1="0" x2="26" y2="0" stroke="currentColor" stroke-width="2"/>
+      `;
+    },
+  },
+  ground: {
+    name: "接地",
+    desc: "將電路與大地相連，作為電壓參考點。",
+    draw: (g) => {
+      g.innerHTML = `
+        <line x1="0" y1="-22" x2="0" y2="-2" stroke="currentColor" stroke-width="2"/>
+        <line x1="-14" y1="-2" x2="14" y2="-2" stroke="currentColor" stroke-width="2.5"/>
+        <line x1="-9" y1="3" x2="9" y2="3" stroke="currentColor" stroke-width="2"/>
+        <line x1="-4" y1="8" x2="4" y2="8" stroke="currentColor" stroke-width="2"/>
+      `;
+    },
+  },
+};
+
+/* Helper to build a small symbol preview SVG */
+function makeSymbolSVG(key, opt={}, width=80, height=44){
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", "-34 -30 68 60");
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+  svg.style.color = opt.color || "var(--ink)";
+  const defs = document.createElementNS(SVG_NS, "defs");
+  
+  svg.appendChild(defs);
+  const g = document.createElementNS(SVG_NS, "g");
+  SYMBOLS[key].draw(g, opt);
+  svg.appendChild(g);
+  return svg;
+}
+
+/* =================================================================
+   TAB SWITCHING
+   ================================================================= */
+const tabs = [...document.querySelectorAll("nav.tabs button")];
+document.getElementById("tabs").setAttribute("role","tablist");
+document.getElementById("tabs").setAttribute("aria-label","實驗模組");
+tabs.forEach((btn,index) => {
+  btn.id = 'nav-' + btn.dataset.tab;
+  btn.setAttribute('role','tab');
+  btn.setAttribute('aria-controls','tab-' + btn.dataset.tab);
+  const panel = document.getElementById('tab-' + btn.dataset.tab);
+  panel.setAttribute('role','tabpanel'); panel.setAttribute('aria-labelledby',btn.id);
+  btn.setAttribute('aria-selected',index===0); btn.tabIndex = index===0 ? 0 : -1;
+  btn.addEventListener('click',()=>{
+    tabs.forEach(b=>{const active=b===btn;b.classList.toggle('active',active);b.setAttribute('aria-selected',active);b.tabIndex=active?0:-1;
+      document.getElementById('tab-'+b.dataset.tab).classList.toggle('active',active);});
+  });
+  btn.addEventListener('keydown',e=>{
+    let next = e.key==='ArrowRight' ? (index+1)%tabs.length : e.key==='ArrowLeft' ? (index+tabs.length-1)%tabs.length : e.key==='Home' ? 0 : e.key==='End' ? tabs.length-1 : null;
+    if(next!==null){e.preventDefault();tabs[next].click();tabs[next].focus();}
+  });
+});
+
+/* =================================================================
+   TAB 1 — Symbol grid
+   ================================================================= */
+(function renderSymbols(){
+  const grid = document.getElementById("symbol-grid");
+  Object.entries(SYMBOLS).forEach(([key, sym]) => {
+    const card = document.createElement("div");
+    card.className = "symbol-card";
+    const svg = makeSymbolSVG(key, {}, 120, 60);
+    card.appendChild(svg);
+    card.insertAdjacentHTML("beforeend",
+      `<div class="name">${sym.name}</div><div class="desc">${sym.desc}</div>`);
+    grid.appendChild(card);
+  });
+})();
+
+/* =================================================================
+   PRESET CIRCUITS
+   ================================================================= */
+/* Each preset is a function that takes a "switches" state object and
+   returns { svg: HTMLElement, stats: {label,value,cls}[], switches: [...] }. */
+
+const PRESETS = [
+  {
+    id: "series",
+    name: "串聯電路",
+    desc: "兩個燈泡與一個開關串聯，電流路徑唯一。",
+    init: { S: true },
+    render: (s) => {
+      const V = 6, R = 3;
+      const closed = s.S;
+      const I = closed ? V / (2*R) : 0;
+      const lit = closed ? 0.25 : 0;
+      return {
+        svg: presetSeriesSVG(closed, lit),
+        switches: [{ id:"S", x:240, y:60 }],
+        stats: [
+          { k:"電壓 V", v: "6.0 V" },
+          { k:"迴路等效電阻", v: closed ? "6.0 Ω" : "∞ Ω" },
+          { k:"電流 I", v: I.toFixed(2)+" A" },
+          { k:"L₁ 亮度", v: closed ? "亮" : "熄", cls: closed?"ok":"warn" },
+          { k:"L₂ 亮度", v: closed ? "亮" : "熄", cls: closed?"ok":"warn" },
+        ],
+      };
+    },
+  },
+  {
+    id: "parallel",
+    name: "並聯電路",
+    desc: "兩個燈泡分別接在兩條支路，各自有獨立開關。",
+    init: { S1: true, S2: true },
+    render: (s) => {
+      const V = 6, R = 3;
+      const I1 = s.S1 ? V / R : 0;
+      const I2 = s.S2 ? V / R : 0;
+      const Itotal = I1 + I2;
+      return {
+        svg: presetParallelSVG(s.S1, s.S2),
+        switches: [{ id:"S1", x:340, y:90 }, { id:"S2", x:340, y:220 }],
+        stats: [
+          { k:"電壓 V", v: "6.0 V" },
+          { k:"L₁ 支路電流", v: I1.toFixed(2)+" A", cls: s.S1?"ok":"warn" },
+          { k:"L₂ 支路電流", v: I2.toFixed(2)+" A", cls: s.S2?"ok":"warn" },
+          { k:"總電流", v: Itotal.toFixed(2)+" A" },
+          { k:"等效電阻", v: (s.S1 && s.S2) ? "1.5 Ω" : (s.S1||s.S2 ? "3.0 Ω" : "∞") },
+        ],
+      };
+    },
+  },
+  {
+    id: "short",
+    name: "短路（危險）",
+    desc: "導線直接連接電池兩極，繞過燈泡。電流瞬間變大。",
+    init: { S: true },
+    render: (s) => {
+      const closed = s.S;
+      return {
+        svg: presetShortSVG(closed),
+        switches: [{ id:"S", x:240, y:60 }],
+        stats: [
+          { k:"電壓 V", v: "6.0 V" },
+          { k:"迴路電阻", v: closed ? "≈ 0 Ω" : "3.0 Ω" },
+          { k:"電流 I", v: closed ? "極大！" : "2.00 A", cls: closed ? "warn" : "ok" },
+          { k:"狀態", v: closed ? "短路 ⚠" : "正常", cls: closed ? "warn" : "ok" },
+        ],
+      };
+    },
+  },
+  {
+    id: "open",
+    name: "斷路",
+    desc: "開關斷開後，電路不完整，無電流通過。",
+    init: { S: false },
+    render: (s) => {
+      const closed = s.S;
+      const I = closed ? 6 / 3 : 0;
+      return {
+        svg: presetOpenSVG(closed),
+        switches: [{ id:"S", x:240, y:60 }],
+        stats: [
+          { k:"電壓 V", v: "6.0 V" },
+          { k:"迴路等效電阻", v: closed ? "3.0 Ω" : "∞ Ω" },
+          { k:"電流 I", v: I.toFixed(2)+" A", cls: closed?"ok":"warn" },
+          { k:"狀態", v: closed?"通路":"斷路", cls: closed?"ok":"warn" },
+        ],
+      };
+    },
+  },
+];
+
+/* Each preset SVG returns an SVGElement (size 480x300). They share a
+   common rectangular wire path and overlay components at fixed positions. */
+
+function presetBaseSVG(){
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", "0 0 480 300");
+  svg.setAttribute("width", "100%");
+  svg.style.maxWidth = "560px";
+  svg.style.color = "var(--ink)";
+  const defs = document.createElementNS(SVG_NS, "defs");
+  
+  svg.appendChild(defs);
+  return svg;
+}
+function wire(svg, x1,y1,x2,y2, opt={}){
+  const l = document.createElementNS(SVG_NS, "line");
+  l.setAttribute("x1",x1);l.setAttribute("y1",y1);
+  l.setAttribute("x2",x2);l.setAttribute("y2",y2);
+  l.setAttribute("stroke", opt.on ? "var(--wire-on)" : "var(--wire)");
+  l.setAttribute("stroke-width", opt.w || 2);
+  l.setAttribute("stroke-linecap","round");
+  if(opt.dashed) l.setAttribute("stroke-dasharray","5 4");
+  svg.appendChild(l);
+}
+function placeSymbol(svg, key, x, y, opt={}, rotate=0){
+  const g = document.createElementNS(SVG_NS, "g");
+  g.setAttribute("transform", `translate(${x},${y}) rotate(${rotate})`);
+  g.style.color = opt.color || "var(--ink)";
+  SYMBOLS[key].draw(g, opt);
+  const backing = document.createElementNS(SVG_NS,'rect');
+  backing.setAttribute('x',-26);backing.setAttribute('y',-17);backing.setAttribute('width',52);backing.setAttribute('height',34);backing.setAttribute('fill','#111b24');
+  g.insertBefore(backing,g.firstChild);
+  if (opt.label) {
+    const t = document.createElementNS(SVG_NS, "text");
+    t.setAttribute("transform",`rotate(${-rotate})`);
+    t.setAttribute("x", rotate===90 ? -40 : 0);
+    t.setAttribute("y", rotate===90 ? 4 : (opt.labelY ?? 32));
+    t.setAttribute("text-anchor", "middle");
+    t.setAttribute("font-size", "12");
+    t.setAttribute("fill", "var(--muted)");
+    t.textContent = opt.label;
+    g.appendChild(t);
+  }
+  svg.appendChild(g);
+  return g;
+}
+
+function presetSeriesSVG(closed, lit){
+  const svg = presetBaseSVG();
+  // outer rectangle: 60,60 → 420,240
+  const on = closed;
+  wire(svg, 60,60, 420,60, {on});      // top
+  wire(svg, 420,60, 420,240, {on});    // right
+  wire(svg, 420,240, 60,240, {on});    // bottom
+  wire(svg, 60,240, 60,60, {on});      // left
+  placeSymbol(svg, "battery", 60, 150, { label:"6V" }, 90);
+  placeSymbol(svg, "switch",  240, 60, { closed, _id:"S", interactive:true, label:"開關 S" });
+  placeSymbol(svg, "bulb",    150, 240, { lit, label:"L₁" }, 180);
+  placeSymbol(svg, "bulb",    330, 240, { lit, label:"L₂" }, 180);
+  return svg;
+}
+
+function presetParallelSVG(S1, S2){
+  const svg = presetBaseSVG();
+  const onMain = S1 || S2;
+  // Battery on left rail
+  wire(svg, 80,60, 80,240, {on:onMain});       // left rail
+  wire(svg, 80,60, 200,60, {on:onMain});       // top to junction
+  wire(svg, 80,240, 400,240, {on:onMain});     // bottom to junction
+  // Two parallel branches at x=200..400
+  wire(svg, 200,60, 200,220, {on:onMain});     // left junction vertical
+  wire(svg, 400,60, 400,240, {on:onMain});     // right junction vertical
+  // Top branch (L1)
+  wire(svg, 200,90, 400,90, {on:S1});
+  // Bottom branch (L2)
+  wire(svg, 200,220, 400,220, {on:S2});
+  // Right rail back to battery
+  wire(svg, 400,60, 460,60, {on:onMain});
+  wire(svg, 460,60, 460,240, {on:onMain});
+  wire(svg, 460,240, 400,240, {on:onMain});
+
+  placeSymbol(svg, "battery", 80, 150, { label:"6V" }, 90);
+  placeSymbol(svg, "switch",  340, 90, { closed:S1, label:"S₁" });
+  placeSymbol(svg, "bulb",    260, 90, { lit: S1?1:0, label:"L₁" });
+  placeSymbol(svg, "switch",  340, 220, { closed:S2, label:"S₂" });
+  placeSymbol(svg, "bulb",    260, 220, { lit: S2?1:0, label:"L₂" });
+  return svg;
+}
+
+function presetShortSVG(closed){
+  const svg = presetBaseSVG();
+  const danger = closed;
+  wire(svg, 60,60, 140,60, {on:true});
+  wire(svg, 140,60, 420,60, {on:danger});       // bypass switch
+  wire(svg, 420,60, 420,240, {on:danger});
+  wire(svg, 420,240, 340,240, {on:danger});
+  wire(svg, 340,240, 60,240, {on:true});
+  wire(svg, 60,240, 60,60, {on:true});
+
+  placeSymbol(svg, "battery", 60, 150, { label:"6V" }, 90);
+  placeSymbol(svg, "switch",  240, 60, { closed, label:"開關 S" });
+
+  wire(svg, 140,60, 140,180, {on:!danger});
+  wire(svg, 140,180, 340,180, {on:!danger});
+  wire(svg, 340,180, 340,240, {on:!danger});
+  placeSymbol(svg, "bulb", 240, 180, { lit: danger?0:1, label: danger?"L（被短路）":"L（正常發光）" });
+
+  if (danger){
+    const warn = document.createElementNS(SVG_NS,"text");
+    warn.setAttribute("x",240);warn.setAttribute("y",290);warn.setAttribute("text-anchor","middle");
+    warn.setAttribute("fill","var(--red)");warn.setAttribute("font-size","13");warn.setAttribute("font-weight","600");
+    warn.textContent = "⚠ 短路 — 電流繞過燈泡直接回到電池";
+    svg.appendChild(warn);
+  }
+  return svg;
+}
+
+function presetOpenSVG(closed){
+  const svg = presetBaseSVG();
+  const on = closed;
+  wire(svg, 60,60, 420,60, {on, dashed: !closed});
+  wire(svg, 420,60, 420,240, {on});
+  wire(svg, 420,240, 60,240, {on});
+  wire(svg, 60,240, 60,60, {on});
+  placeSymbol(svg, "battery", 60, 150, { label:"6V" }, 90);
+  placeSymbol(svg, "switch",  240, 60, { closed, label:"開關 S" });
+  placeSymbol(svg, "bulb",    330, 240, { lit: closed?1:0, label:"L" }, 180);
+  if (!closed){
+    const t = document.createElementNS(SVG_NS,"text");
+    t.setAttribute("x",240);t.setAttribute("y",290);t.setAttribute("text-anchor","middle");
+    t.setAttribute("fill","var(--muted)");t.setAttribute("font-size","12");
+    t.textContent = "開關斷開 → 電路不完整，無電流";
+    svg.appendChild(t);
+  }
+  return svg;
+}
+
+/* Preset state management */
+const presetState = {};
+PRESETS.forEach(p => presetState[p.id] = { ...p.init });
+let currentPreset = "series";
+
+(function initPresets(){
+  const list = document.getElementById("preset-list");
+  PRESETS.forEach(p => {
+    const btn = document.createElement("button");
+    btn.dataset.id = p.id;
+    btn.innerHTML = `<div class="pname">${p.name}</div><div class="pdesc">${p.desc}</div>`;
+    btn.addEventListener("click", () => { currentPreset = p.id; renderPreset(); });
+    list.appendChild(btn);
+  });
+  renderPreset();
+})();
+
+function renderPreset(){
+  document.querySelectorAll(".preset-list button").forEach(b =>
+    b.classList.toggle("active", b.dataset.id === currentPreset));
+  const preset = PRESETS.find(p => p.id === currentPreset);
+  const state = presetState[currentPreset];
+  const { svg, stats, switches } = preset.render(state);
+
+  const canvas = document.getElementById("preset-canvas");
+  canvas.innerHTML = "";
+  canvas.appendChild(svg);
+
+  // Wire up switch click handlers by overlaying invisible hit-areas
+  switches.forEach(sw => {
+    const hit = document.createElementNS(SVG_NS,"rect");
+    hit.setAttribute("x", sw.x - 30); hit.setAttribute("y", sw.y - 20);
+    hit.setAttribute("width", 60); hit.setAttribute("height", 40);
+    hit.setAttribute("fill","transparent");
+    hit.style.cursor = "pointer";
+    hit.setAttribute('role','button');hit.setAttribute('tabindex','0');
+    hit.setAttribute('aria-label',sw.id+' 開關');hit.setAttribute('aria-pressed',state[sw.id]);
+    hit.id='preset-switch-'+sw.id;
+    hit.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();hit.dispatchEvent(new MouseEvent('click'));}});
+    hit.addEventListener("click", () => {
+      state[sw.id] = !state[sw.id];
+      renderPreset();
+      document.getElementById("preset-switch-"+sw.id).focus();
+    });
+    svg.appendChild(hit);
+  });
+
+  const info = document.getElementById("preset-info");
+  info.innerHTML = stats.map(s => `
+    <div class="stat">
+      <div class="k">${s.k}</div>
+      <div class="v ${s.cls||""}">${s.v}</div>
+    </div>`).join("");
+}
+
+/* =================================================================
+   TAB 3 — Circuit Builder
+   ================================================================= */
+const COMP_R={wire:0,bulb:3,resistor:5,ammeter:0,voltmeter:Infinity};
+const COMP_LABEL={wire:'導線',bulb:'燈泡 3 Ω',switch:'開關',resistor:'電阻 5 Ω',ammeter:'電流計',voltmeter:'電壓計'};
+let bState={V:6,topSlots:[null,null,null],branches:[]};
+let selectedTool='bulb';
+function slotResistance(slot){return !slot?Infinity:slot.type==='switch'?(slot.closed?0:Infinity):(COMP_R[slot.type]??Infinity);}
+function parallel(a,b){if(a===0||b===0)return 0;if(!Number.isFinite(a))return b;if(!Number.isFinite(b))return a;return 1/(1/a+1/b);}
+function analyzeCircuit(s){
+  const groups=s.topSlots.map((slot,i)=>[slot,...s.branches.filter(b=>b.afterSlot+1===i).map(b=>b.comp)]);
+  const resistances=groups.map(group=>group.reduce((r,slot)=>parallel(r,slotResistance(slot)),Infinity));
+  const Reff=resistances.reduce((a,b)=>a+b,0);
+  const short=Reff===0, open=!Number.isFinite(Reff);
+  const I=short?Infinity:open?0:s.V/Reff;
+  const branchOn=s.branches.map(()=>false),topSegOn=[];
+  groups.forEach((group,i)=>{
+    const voltage=!short&&!open?I*resistances[i]:open&&resistances.filter(r=>!Number.isFinite(r)).length===1&&!Number.isFinite(resistances[i])?s.V:0;
+    group.forEach(slot=>{if(!slot)return;const r=slotResistance(slot);const current=short||open||!Number.isFinite(r)?0:r===0?I/group.filter(c=>slotResistance(c)===0).length:voltage/r;
+      slot._current=current;slot._voltage=voltage;slot._lit=slot.type==='bulb'?Math.min(1,current*current*3/12):0;
+    });
+    const on=(s.topSlots[i]?._current??0)>0;
+    topSegOn.push({left:on,right:on});
+  });
+  s.branches.forEach((b,i)=>branchOn[i]=(b.comp?._current??0)>0);
+  const idle=s.topSlots.every(x=>!x)&&!s.branches.length;
+  const status=idle?{kind:'idle',text:'選擇元件並點選格子，或載入範例開始探索。'}:short?{kind:'warn',text:'短路：電源兩端只剩理想導線，電流無有限解。請加入燈泡或電阻。'}:open?{kind:'warn',text:'斷路：格子未連接、開關斷開，或電壓計串聯；沒有電流。'}:{kind:'ok',text:`通路 · 總電流 ${I.toFixed(2)} A。試著切換開關或加入並聯支路。`};
+  return {Reff,I,V:s.V,status,mainCurrentOn:!short&&!open&&I>0,topSegOn,branchOn};
+}
+function setTool(type){selectedTool=type;document.querySelectorAll('.pal-item').forEach(b=>{const on=b.dataset.type===type;b.classList.toggle('selected',on);b.setAttribute('aria-pressed',on);});}
+(function renderPalette(){
+  const pal=document.getElementById('palette');
+  [...Object.keys(COMP_LABEL),'toggle','erase'].forEach(type=>{
+    const b=document.createElement('button');b.className='pal-item';b.dataset.type=type;b.type='button';
+    if(COMP_LABEL[type]){b.appendChild(makeSymbolSVG(type,{},56,32));b.draggable=true;b.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',type);setTool(type);});}
+    const label=document.createElement('div');label.className='lbl';label.textContent=COMP_LABEL[type]||(type==='toggle'?'操作開關':'移除元件');b.appendChild(label);
+    b.addEventListener('click',()=>setTool(type));pal.appendChild(b);
+  });setTool(selectedTool);
+})();
+function renderSlot(svg,cx,cy,slot,ref){
+  const g=document.createElementNS(SVG_NS,'g');const id=`slot-${ref.kind}-${ref.index}`;
+  g.id=id;g.setAttribute('class','slot'+(slot?' filled':''));g.setAttribute('transform',`translate(${cx},${cy})`);g.setAttribute('role','button');g.setAttribute('tabindex','0');
+  g.setAttribute('aria-label',`${ref.kind==='top'?'主路':'支路'} ${ref.index+1}：${slot?COMP_LABEL[slot.type]+(slot.type==='switch'?(slot.closed?'，閉合':'，斷開'):''):'空格'}。使用已選工具，Delete 移除`);
+  g.innerHTML='<rect class="slot-bg" x="-30" y="-24" width="60" height="48" rx="8"/>';
+  if(slot){const symbol=document.createElementNS(SVG_NS,'g');SYMBOLS[slot.type].draw(symbol,{closed:slot.closed,lit:slot._lit});g.appendChild(symbol);}
+  const label=document.createElementNS(SVG_NS,'text');label.setAttribute('y',44);label.setAttribute('class','slot-label');
+  label.textContent=!slot?'＋ 放入元件':slot.type==='ammeter'?`${slot._current.toFixed(2)} A`:slot.type==='voltmeter'?`${slot._voltage.toFixed(2)} V`:COMP_LABEL[slot.type];g.appendChild(label);
+  function apply(tool){
+    if(tool==='toggle'){if(slot?.type==='switch')slot.closed=!slot.closed;}
+    else {const next=tool==='erase'?null:{type:tool,...(tool==='switch'?{closed:true}:{})};if(ref.kind==='top')bState.topSlots[ref.index]=next;else bState.branches[ref.index].comp=next;}
+    renderBuilder();document.getElementById(id)?.focus();
+  }
+  g.addEventListener('click',()=>apply(selectedTool));
+  g.addEventListener('keydown',e=>{if(['Enter',' ','Delete','Backspace'].includes(e.key)){e.preventDefault();apply(['Delete','Backspace'].includes(e.key)?'erase':selectedTool);}});
+  g.addEventListener('contextmenu',e=>{e.preventDefault();apply('erase');});
+  g.addEventListener('dragover',e=>{e.preventDefault();g.classList.add('drag-over');});g.addEventListener('dragleave',()=>g.classList.remove('drag-over'));
+  g.addEventListener('drop',e=>{e.preventDefault();const type=e.dataTransfer.getData('text/plain');if(Object.hasOwn(COMP_LABEL,type))apply(type);});svg.appendChild(g);
+}
+function renderBuilder(){
+  const svg=document.getElementById('build-canvas');svg.innerHTML='';
+  const a=analyzeCircuit(bState),left=80,right=720,top=90,bottom=340,step=(right-left)/3;
+  wire(svg,left,top,left,bottom,{on:a.mainCurrentOn});wire(svg,left,bottom,right,bottom,{on:a.mainCurrentOn});wire(svg,right,top,right,bottom,{on:a.mainCurrentOn});
+  placeSymbol(svg,'battery',left,215,{label:'6 V'},90);
+  bState.topSlots.forEach((slot,i)=>{const x=left+step*i,cx=x+step/2;wire(svg,x,top,cx-26,top,{on:a.topSegOn[i].left});wire(svg,cx+26,top,x+step,top,{on:a.topSegOn[i].right});renderSlot(svg,cx,top,slot,{kind:'top',index:i});});
+  bState.branches.forEach((b,i)=>{
+    const x=left+step*(b.afterSlot+1),y=225,cx=x+step/2,on=a.branchOn[i];
+    wire(svg,x,top,x,y,{on});wire(svg,x,y,cx-26,y,{on});wire(svg,cx+26,y,x+step,y,{on});wire(svg,x+step,y,x+step,top,{on});
+    for(const jx of [x,x+step]){const dot=document.createElementNS(SVG_NS,'circle');dot.setAttribute('cx',jx);dot.setAttribute('cy',top);dot.setAttribute('r',4);dot.setAttribute('fill','var(--wire)');svg.appendChild(dot);}
+    renderSlot(svg,cx,y,b.comp,{kind:'branch',index:i});
+    const del=document.createElementNS(SVG_NS,'g');del.setAttribute('transform',`translate(${cx},${y+72})`);del.setAttribute('role','button');del.setAttribute('tabindex','0');del.setAttribute('aria-label',`移除第 ${i+1} 條支路`);del.style.cursor='pointer';
+    del.innerHTML='<rect x="-42" y="-17" width="84" height="34" rx="8" fill="#2a242c"/><text text-anchor="middle" y="4" fill="var(--red)" font-size="12">移除支路 ×</text>';
+    del.addEventListener('click',()=>{bState.branches.splice(i,1);renderBuilder();document.getElementById('add-branch').focus();});del.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();del.dispatchEvent(new MouseEvent('click'));}});svg.appendChild(del);
+  });
+  document.getElementById('add-branch').disabled=bState.branches.length>=2;
+  document.getElementById('r-volt').textContent=a.V.toFixed(1)+' V';document.getElementById('r-res').textContent=Number.isFinite(a.Reff)?a.Reff.toFixed(2)+' Ω':'∞ Ω';
+  document.getElementById('r-cur').textContent=Number.isFinite(a.I)?a.I.toFixed(2)+' A':'無有限值';document.getElementById('r-pow').textContent=Number.isFinite(a.I)?(a.V*a.I).toFixed(2)+' W':'—';
+  const status=document.getElementById('r-status');status.className='status '+(a.status.kind==='ok'?'':a.status.kind);status.textContent=a.status.text;
+}
+document.getElementById('add-branch').addEventListener('click',()=>{const anchor=[0,1].find(k=>!bState.branches.some(b=>b.afterSlot===k));if(anchor!==undefined)bState.branches.push({afterSlot:anchor,comp:null});renderBuilder();});
+document.getElementById('clear-all').addEventListener('click',()=>{bState={V:6,topSlots:[null,null,null],branches:[]};renderBuilder();});
+document.getElementById('example').addEventListener('click',()=>{bState={V:6,topSlots:[{type:'switch',closed:true},{type:'bulb'},{type:'wire'}],branches:[]};setTool('toggle');renderBuilder();});
+renderBuilder();
+
+/* =================================================================
+   TAB 4 — Ohm's Law
+   ================================================================= */
+function renderOhm(){
+  const V = parseFloat(document.getElementById("ohm-v").value);
+  const R = parseFloat(document.getElementById("ohm-r").value);
+  const I = V / R;
+  const P = V * I;
+  document.getElementById("ohm-v-val").textContent = V.toFixed(1);
+  document.getElementById("ohm-r-val").textContent = R.toFixed(1);
+  document.getElementById("ohm-v-eq").textContent = V.toFixed(1);
+  document.getElementById("ohm-r-eq").textContent = R.toFixed(1);
+  document.getElementById("ohm-i-eq").textContent = I.toFixed(2);
+  document.getElementById("ohm-p-eq").textContent = P.toFixed(2);
+
+  // SVG: battery, ammeter, bulb, voltmeter across bulb
+  const canvas = document.getElementById("ohm-canvas");
+  canvas.innerHTML = "";
+  const svg = presetBaseSVG();
+  svg.setAttribute("viewBox","0 0 500 320");
+  svg.style.maxWidth = "560px";
+
+  const lit = Math.min(1, P / 12); // 24W = full brightness for the slider range
+
+  wire(svg, 80,80, 420,80, {on: I>0.001});
+  wire(svg, 420,80, 420,260, {on: I>0.001});
+  wire(svg, 420,260, 80,260, {on: I>0.001});
+  wire(svg, 80,260, 80,80, {on: I>0.001});
+
+  placeSymbol(svg, "battery",  80, 170, { label:`${V.toFixed(1)} V` }, 90);
+  placeSymbol(svg, "ammeter",  200, 80, { label:`${I.toFixed(2)} A` });
+  placeSymbol(svg, "bulb",     320, 80, { lit, label:`R = ${R.toFixed(1)}Ω` });
+
+  wire(svg, 280,80, 280,175);
+  wire(svg, 280,175, 390,175);
+  wire(svg, 390,175, 390,80);
+  placeSymbol(svg, "voltmeter", 335,175, { label:`${V.toFixed(1)} V` });
+
+  canvas.appendChild(svg);
+}
+document.getElementById("ohm-v").addEventListener("input", renderOhm);
+document.getElementById("ohm-r").addEventListener("input", renderOhm);
+renderOhm();
+</script>
+</body>
+</html>
