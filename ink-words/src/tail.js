@@ -233,6 +233,7 @@ function build(el,instant){
     x0=Math.min(x0,o.x-rx);x1=Math.max(x1,o.x+rx);y0=Math.min(y0,o.y-o.r);y1=Math.max(y1,o.y+o.r);
   }
   if(el.kind==='rain'){x0=-W*.5;x1=W*1.5;y0=0;y1=H}
+  if(el.kind==='ai'){x0=el.cx-el.B*.62;x1=el.cx+el.B*.62;y0=el.cy-el.B*.62;y1=el.cy+el.B*.62}
   x0=Math.max(Math.floor(x0)-3,-Math.ceil(W*.5)-10);x1=Math.min(Math.ceil(x1)+3,Math.ceil(W*1.5)+10);
   y0=Math.max(Math.floor(y0)-3,-40);y1=Math.min(Math.ceil(y1)+3,Math.ceil(H)+20);
   if(!(x1>x0))x1=x0+1;if(!(y1>y0))y1=y0+1;
@@ -242,7 +243,7 @@ function build(el,instant){
   if(instant)advance(el,1e9,false);
 }
 function drawSpr(el,T,gust){
-  var sw=SWAY[el.kind];
+  var sw=SWAY[el.kind]||el.sw;
   if(!sw||still){ink.drawImage(el.spr,el.bx,el.by,el.bw,el.bh);return}
   var sl=3,A=sw[0]*S*gust,ph=el.seed%100,ref=Math.max(el.bh,200*S),k=sw[1]/S;
   for(var sy=0;sy<el.bh;sy+=sl){
@@ -312,12 +313,13 @@ function frame(ms){
       ink.drawImage(el.spr,el.bx+ox,oy,el.bw,el.bh);ink.drawImage(el.spr,el.bx+ox-H*k,oy-H,el.bw,el.bh);
       ink.globalAlpha=1;continue;
     }
-    if(el.kind==='boat'&&!still){
+    if((el.kind==='boat'||el.float)&&!still){
       ink.save();
       ink.translate(el.bx+el.bw/2+12*S*Math.sin(T*.09+el.seed%7),el.by+el.bh/2+1.6*S*Math.sin(T*1.3));
       ink.rotate(.028*Math.sin(T*1.1));ink.drawImage(el.spr,-el.bw/2,-el.bh/2,el.bw,el.bh);ink.restore();
     }else drawSpr(el,T,gust);
   }
+  if(F.ok)for(i=0;i<AI.pending.length;i++){var pd=AI.pending[i];if(now>pd.next){pd.next=now+.7;F.vortex(pd.x,pd.y,(pd.k++%2?1:-1)*42,70*S);F.splat(pd.x,pd.y,0,0,[.045,.045,.045],20*S)}}
   var fl=Math.max(0,1-(now-flashT)/.4);flash.style.opacity=fl>0?(.6*fl*fl).toFixed(3):0;
   if(F.ok){
     if(Math.random()<.03)F.splat(Math.random()*W,Math.random()*H,(Math.random()-.5)*70*S,(Math.random()-.5)*50*S,null,(120+Math.random()*80)*S);
@@ -355,25 +357,147 @@ function dropGlyph(text,x,y,col){
 /* ---------- UI ---------- */
 var q=document.getElementById('q'),hint=document.getElementById('hint'),pin=document.getElementById('pin'),bottom=document.getElementById('bottom'),
     toast=document.getElementById('toast'),undoB=document.getElementById('undo'),clearB=document.getElementById('clear'),fullB=document.getElementById('full'),tt=0,used=false;
-function say(m){toast.textContent=m;toast.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('on')},3600)}
+function say(m,sticky){toast.textContent=m;toast.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('on')},sticky?90000:3600)}
 function sync(){undoB.disabled=clearB.disabled=!els.length;hint.classList.toggle('off',used)}
 
+
+/* ---------- AI painting: words outside the bank are painted by Claude, stroke by stroke ---------- */
+var AICOL={black:[INK,.82],grey:[INK,.42],pale:[INK,.2],red:[RED,.75],orange:[KOI,.7],pink:[PINK,.6],green:['70,104,78',.62],blue:['58,84,122',.62],yellow:['196,154,52',.68],brown:['110,78,52',.66]};
+ABS['70,104,78']=[.7,.4,.7];ABS['58,84,122']=[.8,.6,.35];ABS['196,154,52']=[.1,.3,.8];ABS['110,78,52']=[.5,.7,.85];
+var MODELS={
+  haiku:{label:'快（Haiku）',opts:{model:'claude-haiku-5-5',modelTier:'quick'}},
+  sonnet:{label:'平衡（Sonnet）',opts:{model:'claude-sonnet-5-5',modelTier:'default',effort:'low'}},
+  opus:{label:'精細（Opus）',opts:{model:'claude-opus-5-5',modelTier:'complex',effort:'low'}},
+  fable:{label:'最精細（Fable）',opts:{model:'claude-fable-5-2',modelTier:'complex',effort:'low'}}
+};
+var AI={on:false,fn:null,model:'sonnet',jobs:0,pending:[],cache:{},last:''};
+try{var sm=localStorage.getItem('inkwords.model');if(sm&&MODELS[sm])AI.model=sm;AI.cache=JSON.parse(localStorage.getItem('inkwords.ai.v1')||'{}')||{}}catch(e){AI.cache={}}
+function aiSave(){try{var ks=Object.keys(AI.cache);while(ks.length>60)delete AI.cache[ks.shift()];localStorage.setItem('inkwords.ai.v1',JSON.stringify(AI.cache))}catch(e){}}
+function aiPrompt(w){
+  return 'You are an ink-wash (sumi-e) painter. Paint "'+w+'" as a small, instantly recognisable brush painting for a school open day.\n\n'
+  +'Canvas: 100 x 100 units, x to the right, y DOWN. Keep the subject within 8..92 and make it fill most of that area.\n\n'
+  +'Reply with ONLY compact JSON objects, one per line, no other text, no code fence.\n'
+  +'Line 1: {"zh":"<Traditional Chinese name, at most 4 characters>","motion":"sway"|"float"|"none"}  (sway = plants and things that bend in wind; float = things that hover, fly or drift on water; none = everything else)\n'
+  +'Then 14 to 34 lines, painted back to front (pale washes first, bold shapes next, small dark details last). Each line is one of:\n'
+  +'{"p":[[x,y],[x,y],...],"w":4,"c":"black","t":"both"}  a brush stroke through 2-9 points; it is smoothed into a curve, add "sharp":true to keep corners. w = width in canvas units, 0.6 (hairline) to 10 (very broad). t = taper: "both" (thin-fat-thin), "end" (fat to thin), "start" (thin to fat), "none".\n'
+  +'{"wash":[x,y,r],"c":"pale"}  a soft blot of diluted ink with radius r\n'
+  +'{"dot":[x,y,r],"c":"black"}  a solid dot\n'
+  +'Colours: black, grey, pale, red, orange, pink, green, blue, yellow, brown. Mostly black and grey, with at most two accent colours.\n\n'
+  +'Rules: build solid forms from a few broad strokes (w 5-10) rather than thin outlines; get the silhouette and proportions right first; no letters, numbers or text; integer coordinates are fine.\n'
+  +'If "'+w+'" cannot be painted, or is not suitable for children, reply with the single line {"no":1}.\n\n'
+  +'Example for "mug":\n{"zh":"杯子","motion":"none"}\n{"wash":[48,60,30],"c":"pale"}\n{"p":[[30,35],[32,80],[66,80],[68,35]],"w":7,"c":"black","t":"none","sharp":true}\n{"p":[[68,45],[86,48],[84,68],[67,70]],"w":4,"c":"black","t":"both"}\n{"p":[[30,35],[49,31],[68,35]],"w":3,"c":"grey","t":"both"}\n{"p":[[44,24],[40,16],[46,9]],"w":1.5,"c":"pale","t":"end"}';
+}
+function mkP(seed){var r=rng(seed);return {W:W,H:H,S:S,t:0,now:0,rnd:r,ops:[],stir:[],R:function(a,b){return a+(b-a)*r()}}}
+function aiBox(el){
+  el.B=Math.min(300*S,W*.72,H*.55);
+  el.cx=Math.min(Math.max(el.ax*W,el.B*.62),W-el.B*.62);el.cy=Math.min(Math.max(el.ay*H,el.B*.62+40),H-el.B*.62-70);
+}
+function num(v,lo,hi,d){v=+v;if(!(v===v))v=d;return Math.min(hi,Math.max(lo,v))}
+/* one shape from Claude -> brush ops, appended to out */
+function shapeOps(el,sh,idx,out){
+  var P=mkP(el.seed+idx*7919),u=el.B/100,col=AICOL[sh.c]||AICOL.black,i;
+  function X(v){return el.cx+(num(v,-8,108,50)-50)*u}function Y(v){return el.cy+(num(v,-8,108,50)-50)*u}
+  if(Array.isArray(sh.wash))wash(P,X(sh.wash[0]),Y(sh.wash[1]),num(sh.wash[2],2,55,15)*u,Math.min(.4,col[1]*.6),col[0],1);
+  else if(Array.isArray(sh.dot))dot(P,X(sh.dot[0]),Y(sh.dot[1]),num(sh.dot[2],.3,12,1.5)*u,col[1],col[0]);
+  else if(Array.isArray(sh.p)){
+    var pts=[];for(i=0;i<sh.p.length&&i<24;i++)if(Array.isArray(sh.p[i]))pts.push([X(sh.p[i][0]),Y(sh.p[i][1])]);
+    if(pts.length<2)return;
+    if(pts.length>2&&!sh.sharp)pts=chaikin(pts,2);
+    var w=num(sh.w,.4,14,3)*u,t=sh.t,wf=t==='none'?function(){return w}:t==='end'?function(q){return w*(1-.85*q)+.4}:t==='start'?function(q){return w*(.15+.85*q)+.4}:function(q){return w*(.25+.75*Math.sin(PI*q))};
+    stroke(P,pts,wf,{a:col[1],c:col[0],dry:w>5*u?.3:0,edge:w>4*u?.4:0});
+  }
+  for(i=0;i<P.ops.length;i++)out.push(P.ops[i]);
+}
+G.ai=function(P){var el=P.el;aiBox(el);for(var i=0;i<el.shapes.length;i++)shapeOps(el,el.shapes[i],i,P.ops)};
+function aiAdd(el,sh){if(el.shapes.length>=60)return;el.shapes.push(sh);shapeOps(el,sh,el.shapes.length-1,el.ops)}
+function aiMeta(el,o){if(o.motion==='sway')el.sw=[6,.02,1.3];else if(o.motion==='float')el.float=true;if(typeof o.zh==='string')el.zh=o.zh.slice(0,6)}
+var AIERR={not_granted:'這裡沒有開放 AI 作畫。',sampling_disabled:'這個帳號用不到 AI 作畫。',not_declared:'這個頁面沒有開啟 AI 作畫。',capability_disabled:'這裡用不到 AI 作畫。',capability_removed:'這裡用不到 AI 作畫。',
+  rate_limited:'墨用得太快了，等一下再試。',session_expired:'請重新登入 Claude 再試。',refused:'這個字，墨不畫。'};
+function aiPaint(word,ax,ay,delay){
+  var now=performance.now()/1000,el={kind:'ai',word:word,seed:(Math.random()*2147483647)|0,ax:ax,ay:ay,i:0,ops:[],shapes:[],lastK:-1,born:now+delay+.9};
+  build(el,false);els.push(el);
+  var hit=AI.cache[word];
+  if(hit){aiMeta(el,hit.meta||{});hit.shapes.forEach(function(s){aiAdd(el,s)});return el}
+  if(AI.jobs>=2){els.splice(els.indexOf(el),1);say('墨還在畫上一個字，等一下再試。');return null}
+  AI.jobs++;var pend={x:el.cx,y:el.cy,next:now+delay+1.2,k:0};AI.pending.push(pend);
+  say('墨正在想「'+word+'」怎麼畫…',true);
+  var buf='',t0=performance.now(),meta={},no=false;
+  function unpend(){var i=AI.pending.indexOf(pend);if(i>=0)AI.pending.splice(i,1)}
+  function line(s){
+    s=s.trim().replace(/,$/,'');if(s[0]!=='{')return;var o;try{o=JSON.parse(s)}catch(e){return}
+    if(!o||typeof o!=='object')return;
+    if(o.no){no=true;return}
+    if(o.zh||o.motion){meta={zh:o.zh,motion:o.motion};aiMeta(el,o);return}
+    if(o.p||o.wash||o.dot){if(!el.shapes.length)unpend();aiAdd(el,o)}
+  }
+  function drop(){var i=els.indexOf(el);if(i>=0)els.splice(i,1);sync()}
+  var opts={onText:function(u){buf+=u.delta;var parts=buf.split('\n');buf=parts.pop();parts.forEach(line)}},mo=MODELS[AI.model].opts;
+  for(var k in mo)opts[k]=mo[k];
+  AI.fn(aiPrompt(word),opts).then(function(res){
+    line(buf);unpend();AI.jobs--;
+    var secs=((performance.now()-t0)/1000).toFixed(1);
+    AI.last='上次：「'+word+'」'+secs+' 秒，'+(res&&res.modelApplied?res.modelApplied:'層級 '+(res&&res.modelTierApplied||'?'))+'，'+el.shapes.length+' 筆';aiPanel();
+    if(no||el.shapes.length<3){drop();say('墨畫不出「'+word+'」，換一個字試試。');return}
+    AI.cache[word]={meta:meta,shapes:el.shapes.slice()};aiSave();
+    say('「'+word+'」畫好了（'+secs+' 秒）');
+  },function(e){
+    unpend();AI.jobs--;var code=e&&e.code;
+    if(el.shapes.length<5)drop();
+    if(code==='not_granted'||code==='sampling_disabled'||code==='not_declared'||code==='capability_disabled'||code==='capability_removed'){AI.on=false;aiUI()}
+    AI.last='上次：「'+word+'」失敗（'+(code||'未知')+'）';aiPanel();
+    say(AIERR[code]||'墨一時畫不出「'+word+'」，再試一次。');
+  });
+  return el;
+}
+function aiUI(){
+  var b=document.getElementById('aibadge');if(b)b.hidden=!AI.on;
+  q.placeholder=AI.on?'輸入任何字… 茶壺、恐龍、竹':'輸入一個字… 竹、zhu、bamboo';
+  hint.innerHTML=AI.on?'輸入任何字，或點選下方的字，墨就會把它畫出來。<br>在紙上拖動手指，可以攪動墨水。':'輸入一個字，或點選下方的字，墨就會化成它。<br>在紙上拖動手指，可以攪動墨水。';
+}
+function aiPanel(){
+  var p=document.getElementById('panel');if(!p||p.hidden)return;
+  p.innerHTML='';
+  var h=document.createElement('strong');h.textContent='AI 作畫設定';p.appendChild(h);
+  var s=document.createElement('p');s.textContent=AI.on?'字庫以外的字由 Claude 當場畫。選一個模型：':'這裡沒有連上 Claude，只能畫字庫裡的字。';p.appendChild(s);
+  if(AI.on)Object.keys(MODELS).forEach(function(k){
+    var l=document.createElement('label'),r=document.createElement('input');r.type='radio';r.name='model';r.checked=AI.model===k;
+    r.addEventListener('change',function(){AI.model=k;try{localStorage.setItem('inkwords.model',k)}catch(e){}});
+    l.appendChild(r);l.appendChild(document.createTextNode(' '+MODELS[k].label));p.appendChild(l);
+  });
+  if(AI.last){var t=document.createElement('p');t.className='last';t.textContent=AI.last;p.appendChild(t)}
+  var row=document.createElement('div');row.className='row';
+  var c=document.createElement('button');c.type='button';c.className='ghost';c.textContent='忘記畫過的字';
+  c.addEventListener('click',function(){AI.cache={};aiSave();say('已忘記 AI 畫過的字，下次會重新畫。')});
+  var x=document.createElement('button');x.type='button';x.className='ghost';x.textContent='關閉';x.addEventListener('click',function(){p.hidden=true});
+  row.appendChild(c);row.appendChild(x);p.appendChild(row);
+}
+
 function paint(text){
-  var words=text.toLowerCase().split(/[\s,，、。.;；]+/).filter(Boolean).slice(0,6),unknown=[];
-  if(!words.length)return;
+  /* split on punctuation into phrases; a phrase made only of bank words paints each word, anything else goes to the AI as one phrase */
+  var items=[],unknown=[];
+  String(text).toLowerCase().split(/[,，、。;；\n]+/).forEach(function(ph){
+    ph=ph.replace(/["\\<>{}]/g,'').trim();if(!ph)return;
+    var toks=ph.split(/\s+/),kinds=toks.map(lookup);
+    if(kinds.every(Boolean))toks.forEach(function(w,i){items.push({w:w,kind:kinds[i]})});
+    else if(AI.on)items.push({w:ph.slice(0,30),kind:null});
+    else toks.forEach(function(w,i){items.push({w:w.slice(0,16),kind:kinds[i]})});
+  });
+  items=items.slice(0,6);
+  if(!items.length)return;
   if(!W)resize();
   used=true;
-  words.forEach(function(w,n){
-    var kind=lookup(w),d=DEF[kind||'none'],ax,ay;
+  items.forEach(function(it,n){
+    var w=it.w,kind=it.kind,d=DEF[kind||'none'],ax,ay;
     if(anchor&&n===0){ax=anchor.x;ay=anchor.y}else{ax=d[0]+Math.random()*(d[1]-d[0]);ay=d[2]+Math.random()*(d[3]-d[2])}
-    var delay=n*1.1,gx=ax*W,gy=ay*H,glyph=kind?BANK[kind][0]:w.slice(0,16),col=GCOL[kind];
+    var delay=n*1.1,gx=ax*W,gy=ay*H,glyph=kind?BANK[kind][0]:w,col=GCOL[kind];
     if(kind==='rain'||kind==='snow'||kind==='wind'){gx=W*(.3+Math.random()*.4);gy=H*.32}
+    if(!kind&&AI.on){var ael=aiPaint(w,ax,ay,delay);if(!ael)return;gx=ael.cx;gy=ael.cy}
+    else if(!kind)unknown.push(w);
     function drop(){dropGlyph(glyph,gx,gy,col)}
     if(F.ok){
-      var go=function(){if(delay)queue.push({at:performance.now()/1000+delay,fn:drop}),queue.sort(function(a,b){return a.at-b.at});else drop()};
+      var go=function(){if(delay){queue.push({at:performance.now()/1000+delay,fn:drop});queue.sort(function(a,b){return a.at-b.at})}else drop()};
       if(document.fonts&&document.fonts.load)Promise.race([Promise.all([document.fonts.load('80px "Ma Shan Zheng"',glyph),document.fonts.load('80px "LXGW WenKai TC"',glyph)]),new Promise(function(r){setTimeout(r,1200)})]).then(go,go);else go();
     }
-    if(!kind){unknown.push(w);if(F.ok)return;}
     if(!kind)return;
     var el={kind:kind,word:w,seed:(Math.random()*2147483647)|0,ax:ax,ay:ay,i:0,ops:[],lastK:-1,born:performance.now()/1000+delay+(F.ok?.9:0)};
     build(el,still);els.push(el);
@@ -401,6 +525,12 @@ Object.keys(BANK).forEach(function(k){
 });
 undoB.addEventListener('click',function(){els.pop();sync()});
 clearB.addEventListener('click',function(){els=[];queue=[];F.clear();sync()});
+/* tap the seal three times to open the AI settings */
+var markTaps=[];
+document.getElementById('mark').addEventListener('click',function(){
+  var n=performance.now();markTaps=markTaps.filter(function(x){return n-x<900});markTaps.push(n);
+  if(markTaps.length>=3){markTaps=[];var p=document.getElementById('panel');p.hidden=!p.hidden;aiPanel()}
+});
 if(!app.requestFullscreen||!document.fullscreenEnabled)fullB.style.display='none';
 fullB.addEventListener('click',function(){
   try{var p=document.fullscreenElement?document.exitFullscreen():app.requestFullscreen();if(p&&p.catch)p.catch(function(){say('這裡無法使用全螢幕。')})}
@@ -438,5 +568,7 @@ window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(resiz
 if(window.ResizeObserver)new ResizeObserver(function(){clearTimeout(rt);rt=setTimeout(resize,120)}).observe(stage);
 if(document.fonts&&document.fonts.load)document.fonts.load('80px "LXGW WenKai TC"','墨山月竹魚鳥龍風霧').catch(function(){});
 resize();sync();requestAnimationFrame(frame);
-window.__ink={paint:paint,els:function(){return els},fluid:function(){return F.ok}};
+/* inside Claude, the page can ask Claude to paint words that are not in the bank */
+if(window.claude&&typeof window.claude.use==='function'){try{window.claude.use('sample').then(function(s){if(typeof s==='function'){AI.fn=s;AI.on=true;aiUI();aiPanel()}},function(){})}catch(e){}}
+window.__ink={paint:paint,els:function(){return els},fluid:function(){return F.ok},ai:function(){return AI}};
 })();
